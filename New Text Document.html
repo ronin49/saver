@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cursor Position in Non-Wrapping Textarea</title>
+    <style>
+        #fileInput {
+            display: block;
+        }
+        #edit {
+            white-space: nowrap;
+            overflow-x: auto; /* Allow horizontal scrolling */
+            width: 300px;
+            height: 100px;
+        }
+        #preview, #search_cont, #edit, #bEdit, #bSave {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<input type="file" id="fileInput">
+<button onclick="performNew()">New</button>
+
+<div id='search_cont'>
+<input type="text" id="search" placeholder="enter search tags">
+<button onclick="performSearch()">Search</button>
+</div>
+<div>
+<button id='bEdit' onclick="performEdit()">Edit</button>
+<button id='bSave' onclick="performSave()">Save</button>
+</div>
+<div id="preview"></div>
+<textarea id="edit"></textarea>
+
+    <script>
+
+function performNew() {
+	lines.push('');
+gotoNote(lines.length-1);
+	
+	    fileInput.style.display='none';
+            search_cont.style.display='block';
+performEdit()
+}
+
+
+function performSearch() {
+tags=search.value.split(' ')
+for(i=0;i<lines.length;i++) {
+match = 1
+
+const lineWithoutImage = lines[i].replace(/\<img[^>]*>/g,'');
+
+for(j=0;j<tags.length;j++)
+if(!lineWithoutImage.includes(tags[j])) match=0;
+if(match) {
+gotoNote(i);
+return;
+}
+}
+}
+
+function performEdit() {
+            preview.style.display='none';
+            edit.style.display='block';
+bEdit.style.display='none';
+bSave.style.display='block';
+
+}
+function performSave() {
+            preview.style.display='block';
+            edit.style.display='none';
+		lines[currentNode] = preview.innerHTML;
+		
+
+    blob = new Blob([lines.join('\n')], { type: 'text/plain' }); // Create a Blob from the content
+    url = URL.createObjectURL(blob); // Create a URL for the Blob
+
+    a = document.createElement('a'); // Create a link element
+    a.href = url; // Set the href to the Blob URL
+    a.download = 'myfile.txt'; // Set the filename
+    document.body.appendChild(a); // Append the link to the document
+    a.click(); // Programmatically click the link to trigger the download
+    document.body.removeChild(a); // Clean up by removing the link
+    URL.revokeObjectURL(url); // Release the Blob URL
+
+bEdit.style.display='block';
+bSave.style.display='none';
+}
+
+function gotoNote(noteIndex) {
+
+currentNode= noteIndex;
+            preview.style.display='block';
+            edit.style.display='none';
+		edit.value = lines[noteIndex].replace(/\<br\>/g, '\n')
+		preview.innerHTML = lines[noteIndex]
+bEdit.style.display='block';
+bSave.style.display='none';
+}
+
+const preview = document.getElementById('preview');
+const edit = document.getElementById('edit');
+const fileInput = document.getElementById('fileInput');
+const search_cont = document.getElementById('search_cont');
+const search = document.getElementById('search');
+const bEdit = document.getElementById('bEdit');
+const bSave = document.getElementById('bSave');
+
+currentNode=-1;
+
+lines=[]
+
+document.getElementById('fileInput').addEventListener('change', function(event) {
+    const _file = event.target.files[0];
+    
+    if (_file) {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            lines = e.target.result.split('\n');
+	    fileInput.style.display='none';
+            search_cont.style.display='block';
+        };
+        
+        reader.readAsText(_file);
+    }
+});
+
+
+
+
+        edit.addEventListener('input', () => {
+
+
+preview.innerHTML=edit.value.replace(/\n/g, '<br>')
+
+        });
+
+
+        edit.addEventListener('paste', (event) => {
+            const items = event.clipboardData.items;
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+
+                if (item.type.startsWith('image/')) {
+                    const file = item.getAsFile();
+                    const reader = new FileReader();
+                    reader.onloadend = function() {
+                        const base64String = reader.result;
+                        // Insert Base64 image into the paste area
+                        const imgElement = `<img src="${base64String}" style="max-width: 100%;"/>`;
+
+
+position = edit.selectionStart;
+original = edit.value;
+edit.value = original.slice(0, position) + '\n' + imgElement + '\n' + original.slice(position)
+
+preview.innerHTML=edit.value.replace(/\n/g, '<br>');;
+
+const new_position = position + imgElement.length + 1 + 1
+edit.selectionStart=new_position
+edit.selectionEnd=new_position
+
+                    };
+                    reader.readAsDataURL(file);
+            event.preventDefault(); // Prevent default paste handling
+                }
+            }
+        });
+
+function save(data) {
+    const blob = new Blob([data], { type: 'text/plain' }); // Create a Blob from the content
+    const url = URL.createObjectURL(blob); // Create a URL for the Blob
+
+    const a = document.createElement('a'); // Create a link element
+    a.href = url; // Set the href to the Blob URL
+    a.download = 'myfile.txt'; // Set the filename
+    document.body.appendChild(a); // Append the link to the document
+    a.click(); // Programmatically click the link to trigger the download
+    document.body.removeChild(a); // Clean up by removing the link
+    URL.revokeObjectURL(url); // Release the Blob URL
+}
+
+    </script>
+</body>
+</html>
